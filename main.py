@@ -14,6 +14,7 @@ def start(message):
         name TEXT,
         rules INT
     )""")
+
     con.commit()
 
     id = message.chat.id
@@ -29,7 +30,7 @@ def start(message):
     else:
         bot.send_message(message.chat.id, "Вы уже зарегистрированы")
 
-    bot.send_message(message.chat.id, "/help")
+    bot.send_message(message.chat.id, "Напишите /help для вывода справки")
 
     con.close()
 
@@ -52,9 +53,9 @@ def users(message):
                "\n(id, name, rules)"
 
         for i in cur.fetchall():
-            text += "\n" + str(i)
+            text += f"\n(<code>{i[0]}</code>, {i[1]}, {i[2]})"
 
-        bot.send_message(message.chat.id, text, parse_mode="HTML", reply_markup=markup)
+        bot.send_message(message.chat.id, text, parse_mode="HTML", reply_markup=markup, protect_content=True)
     else:
         bot.send_message(message.chat.id, "У вас недостаточно привилегий")
 
@@ -120,12 +121,19 @@ def status(message):
 @bot.message_handler(commands=["help"])
 def helping(message):
     bot.send_message(message.chat.id, f"Версия бота {ver}"
+                                      "\nРепозиторий на github: <a href='github.com/fkrusty34/sqliteBot'>link</a>"
                                       "\n<b>Команды:</b>"
                                       "\n/start - старт"
                                       "\n/help - помощь"
                                       "\n/status - ваши привилегии"
                                       "\n/change_status - сменить привилегии"
-                                      "\n/users - таблица пользователей", parse_mode="HTML")
+                                      "\n/users - пользователи", parse_mode="HTML", disable_web_page_preview=True)
+
+
+@bot.message_handler(commands=["py"])
+def py(message):
+    bot.send_message(message.chat.id, "<pre><code class='language-python'>print('Hello world!')</code></pre>",
+                     parse_mode="HTML")
 
 
 @bot.message_handler(content_types=["text"])
@@ -136,15 +144,10 @@ def not_recognized(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
-    con = sqlite3.connect("pd.db")
-    cur = con.cursor()
-
     if call.data == "change_rules":
-        msg = bot.send_message(call.message.chat.id, "Введите id пользователя и желаемые привилегии в формате"
+        msg = bot.send_message(call.message.chat.id, "Введите id пользователя и привилегии в формате"
                                                      "\n<code>id rules</code>", parse_mode="HTML")
         bot.register_next_step_handler(msg, change_rules)
-
-    con.close()
 
 
 def change_rules(message):

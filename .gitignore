@@ -1,2 +1,7 @@
+#personal data
 config.py
 pd.db
+
+#other
+.idea
+__pycache__
