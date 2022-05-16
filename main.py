@@ -55,7 +55,7 @@ def users(message):
         for i in cur.fetchall():
             text += f"\n(<code>{i[0]}</code>, {i[1]}, {i[2]})"
 
-        bot.send_message(message.chat.id, text, parse_mode="HTML", reply_markup=markup, protect_content=True)
+        bot.send_message(message.chat.id, text, parse_mode="HTML", reply_markup=markup)
     else:
         bot.send_message(message.chat.id, "У вас недостаточно привилегий")
 
@@ -159,13 +159,16 @@ def change_rules(message):
     cur.execute("SELECT id FROM users WHERE id = ?", (pars[0],))
     res = cur.fetchone()
 
-    if res is not None and res[0] != message.chat.id:
+    cur.execute("SELECT rules FROM users WHERE id = ?", (message.chat.id,))
+    res += cur.fetchone()
+
+    if res is not None and res[0] != message.chat.id and pars[1] <= res[1]:
         if pars[1].isdigit() and 0 <= int(pars[1]) <= 4:
             cur.execute("UPDATE users SET rules = ? WHERE id = ?", (pars[1], res[0]))
             con.commit()
             bot.send_message(message.chat.id, "Успешно! /users")
         else:
-            bot.send_message(message.chat.id, "Ошибка: ожидается число в диапазоне от 0 до 4")
+            bot.send_message(message.chat.id, f"Ошибка: ожидается число в диапазоне от 0 до {res[1]}")
 
     else:
         bot.send_message(message.chat.id, "Ошибка: некорректный id")
