@@ -121,7 +121,7 @@ def status(message):
 @bot.message_handler(commands=["help"])
 def helping(message):
     bot.send_message(message.chat.id, f"Версия бота {ver}"
-                                      "\nРепозиторий на github: <a href='github.com/fkrusty34/sqliteBot'>link</a>"
+                                      "\nРепозиторий на GitHub: <a href='github.com/fkrusty34/sqliteBot'>link</a>"
                                       "\n<b>Команды:</b>"
                                       "\n/start - старт"
                                       "\n/help - помощь"
@@ -149,6 +149,8 @@ def callback(call):
                                                      "\n<code>id rules</code>", parse_mode="HTML")
         bot.register_next_step_handler(msg, change_rules)
 
+    bot.answer_callback_query(call.id)
+
 
 def change_rules(message):
     pars = list(message.text.split())
@@ -159,16 +161,21 @@ def change_rules(message):
     cur.execute("SELECT id FROM users WHERE id = ?", (pars[0],))
     res = cur.fetchone()
 
-    cur.execute("SELECT rules FROM users WHERE id = ?", (message.chat.id,))
-    res += cur.fetchone()
+    if res is not None:
+        cur.execute("SELECT rules FROM users WHERE id = ?", (message.chat.id,))
+        res += cur.fetchone()
+    else:
+        bot.send_message(message.chat.id, "Ошибка: некорректный id")
+        con.close()
+        return
 
-    if res is not None and res[0] != message.chat.id and pars[1] <= res[1]:
-        if pars[1].isdigit() and 0 <= int(pars[1]) <= 4:
+    if len(res) == 2 and pars[0].isdigit() and res[0] != int(message.chat.id):
+        if pars[1].isdigit() and 0 <= int(pars[1]) <= min(4, res[1]):
             cur.execute("UPDATE users SET rules = ? WHERE id = ?", (pars[1], res[0]))
             con.commit()
             bot.send_message(message.chat.id, "Успешно! /users")
         else:
-            bot.send_message(message.chat.id, f"Ошибка: ожидается число в диапазоне от 0 до {res[1]}")
+            bot.send_message(message.chat.id, f"Ошибка: ожидается число в диапазоне от 0 до {min(4, res[1])}")
 
     else:
         bot.send_message(message.chat.id, "Ошибка: некорректный id")
